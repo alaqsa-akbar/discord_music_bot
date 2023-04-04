@@ -68,7 +68,7 @@ async def play(ctx, *, args):
 
     playlist.put(pafy.new(url))
 
-    if not len(playlist) - 1:
+    if len(playlist) - 1 == 0:
         _play(ctx, playlist.get(0))
     else:
         await ctx.send(f'**{playlist[-1].title}** has been added to the queue')
@@ -95,7 +95,7 @@ async def resume(ctx):
 @bot.command()
 async def stop(ctx):
     ctx.guild.voice_client.stop()
-    playlist.clear()
+    playlist._queue.clear()
     await ctx.send('Player stopped and queue cleared')
     await ctx.guild.voice_client.disconnect()
 
@@ -117,7 +117,7 @@ def play_next(ctx):
 
 @bot.command()
 async def queue(ctx):
-    if playlist:
+    if not playlist.empty:
         queue_string_array = [f'{i+1}: {song.title}' for i, song in enumerate(playlist)]
         queue_string = '\n'.join(queue_string_array)
         await ctx.send(queue_string)
@@ -129,7 +129,7 @@ def _play(ctx, song):
     asyncio.run_coroutine_threadsafe(ctx.send(f'Playing **{song.title}**'), bot.loop)
     audio = song.getbestaudio()
     source = FFmpegPCMAudio(audio.url, **FFMPEG_OPTIONS)
-    ctx.guild.voice_client.play(source, after=lambda e: play_next(ctx))
+    ctx.guild.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx), bot.loop))
 
 
 bot.run(TOKEN)
