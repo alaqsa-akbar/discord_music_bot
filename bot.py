@@ -7,7 +7,6 @@ import validators
 import re
 import urllib.request
 
-TOKEN = 'MTA1MjE1NjUzODA2OTk5NTU5MQ.GcEds-.eVbGANfCaBTuix5Q6ck5tYv4-XmCn3OLJN-59w'
 intents = discord.Intents.all()
 bot = commands.Bot(intents=intents, command_prefix='$')
 
