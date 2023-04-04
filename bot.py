@@ -6,6 +6,7 @@ import pafy
 import validators
 import re
 import urllib.request
+from config import TOKEN
 
 intents = discord.Intents.all()
 bot = commands.Bot(intents=intents, command_prefix='$')
