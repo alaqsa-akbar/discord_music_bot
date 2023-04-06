@@ -1,18 +1,16 @@
-import discord
-from discord.ext import commands
-from discord import FFmpegPCMAudio
+import disnake
+from disnake.ext import commands
+from disnake import FFmpegPCMAudio
 import asyncio
 import pafy
 import validators
 import re
 import urllib.request
+from MusicPlayer import MusicPlayer, bot
 from config import TOKEN
 
-intents = discord.Intents.all()
-bot = commands.Bot(intents=intents, command_prefix='$')
 
-FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-playlist = asyncio.Queue()
+mp = MusicPlayer()
 
 
 @bot.event
@@ -30,30 +28,19 @@ async def bbl(ctx, *, args):
 
 @bot.command()
 async def join(ctx):
-    if ctx.guild.voice_client:
-        await ctx.guild.voice_client.disconnect()
-
-    if ctx.author.voice:
-        voice_channel = ctx.author.voice.channel
-        await voice_channel.connect()
-        return True
-    else:
-        await ctx.send('You are not in a voice channel')
-        return False
+    await mp.join(ctx)
 
 
 @bot.command()
 async def leave(ctx):
-    if ctx.guild.voice_client:
-        await ctx.guild.voice_client.disconnect()
-    else:
-        await ctx.send('The bot is not in a voice channel')
+    await mp.leave(ctx)
+    
 
 
 @bot.command()
 async def play(ctx, *, args):
     if not ctx.guild.voice_client:
-        if not (await join(ctx)):
+        if not (await mp.join(ctx)):
             return
 
     if validators.url(args.split()[0]):
@@ -66,12 +53,13 @@ async def play(ctx, *, args):
 
         url = "https://www.youtube.com/watch?v=" + video_ids[0]
 
-    playlist.put(pafy.new(url))
+    song = pafy.new(url)
+    await mp.add_song(song)
 
-    if len(playlist) - 1 == 0:
-        _play(ctx, playlist.get(0))
+    if (mp.get_size() - 1) == 0 and not ctx.guild.voice_client.is_playing():
+        mp.play(ctx, await mp.playlist.get())
     else:
-        await ctx.send(f'**{playlist[-1].title}** has been added to the queue')
+        await ctx.send(f'**{song.title}** has been added to the queue')
 
 
 @bot.command()
@@ -95,7 +83,7 @@ async def resume(ctx):
 @bot.command()
 async def stop(ctx):
     ctx.guild.voice_client.stop()
-    playlist._queue.clear()
+    mp.playlist._queue.clear()
     await ctx.send('Player stopped and queue cleared')
     await ctx.guild.voice_client.disconnect()
 
@@ -104,32 +92,17 @@ async def stop(ctx):
 async def skip(ctx):
     if ctx.guild.voice_client.is_playing():
         ctx.guild.voice_client.stop()
-    play_next(ctx)
-
-
-def play_next(ctx):
-    playlist.pop(0)
-    if len(playlist):
-        _play(ctx, playlist[0])
-    else:
-        asyncio.run_coroutine_threadsafe(ctx.send('Queue ended'), bot.loop)
+    await mp.play_next(ctx)
 
 
 @bot.command()
 async def queue(ctx):
-    if not playlist.empty:
-        queue_string_array = [f'{i+1}: {song.title}' for i, song in enumerate(playlist)]
+    if not mp.is_empty():
+        queue_string_array = [f'{i+1}: {song.title}' for i, song in enumerate(list(mp.playlist._queue))]
         queue_string = '\n'.join(queue_string_array)
         await ctx.send(queue_string)
     else:
         await ctx.send('Queue is empty')
-
-
-def _play(ctx, song):
-    asyncio.run_coroutine_threadsafe(ctx.send(f'Playing **{song.title}**'), bot.loop)
-    audio = song.getbestaudio()
-    source = FFmpegPCMAudio(audio.url, **FFMPEG_OPTIONS)
-    ctx.guild.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx), bot.loop))
 
 
 bot.run(TOKEN)
