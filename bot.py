@@ -37,6 +37,7 @@ async def play(ctx, *, args):
         if not (await mp.join(ctx)):
             return
 
+    # TODO: Fix searching algorithm
     if validators.url(args.split()[0]):
         url = args.split()[0]
     else:
@@ -83,6 +84,7 @@ async def stop(ctx):
     await ctx.guild.voice_client.disconnect()
 
 
+# TODO: Fix skip command. For some reason, play_next() is being called twice
 @bot.command()
 async def skip(ctx):
     if ctx.guild.voice_client.is_playing():
