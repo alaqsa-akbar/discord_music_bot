@@ -37,7 +37,6 @@ async def play(ctx, *, args):
         if not (await mp.join(ctx)):
             return
 
-    # TODO: Fix searching algorithm
     if validators.url(args.split()[0]):
         url = args.split()[0]
     else:
