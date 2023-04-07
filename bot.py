@@ -1,7 +1,3 @@
-import disnake
-from disnake.ext import commands
-from disnake import FFmpegPCMAudio
-import asyncio
 import pafy
 import validators
 import re
@@ -11,7 +7,6 @@ from config import TOKEN
 
 
 mp = MusicPlayer()
-
 
 @bot.event
 async def on_ready():
@@ -36,7 +31,6 @@ async def leave(ctx):
     await mp.leave(ctx)
     
 
-
 @bot.command()
 async def play(ctx, *, args):
     if not ctx.guild.voice_client:
@@ -54,10 +48,11 @@ async def play(ctx, *, args):
         url = "https://www.youtube.com/watch?v=" + video_ids[0]
 
     song = pafy.new(url)
-    await mp.add_song(song)
+    mp.add_song(song)
 
-    if (mp.get_size() - 1) == 0 and not ctx.guild.voice_client.is_playing():
-        mp.play(ctx, await mp.playlist.get())
+    if mp.get_size() == 1:
+        await ctx.send(f'**{song.title}** is now playing')
+        mp.play(ctx,  mp.get_first())
     else:
         await ctx.send(f'**{song.title}** has been added to the queue')
 
@@ -83,7 +78,7 @@ async def resume(ctx):
 @bot.command()
 async def stop(ctx):
     ctx.guild.voice_client.stop()
-    mp.playlist._queue.clear()
+    mp.clear()
     await ctx.send('Player stopped and queue cleared')
     await ctx.guild.voice_client.disconnect()
 
@@ -98,7 +93,7 @@ async def skip(ctx):
 @bot.command()
 async def queue(ctx):
     if not mp.is_empty():
-        queue_string_array = [f'{i+1}: {song.title}' for i, song in enumerate(list(mp.playlist._queue))]
+        queue_string_array = [f'{i+1}: {song.title}' for i, song in enumerate(mp.playlist)]
         queue_string = '\n'.join(queue_string_array)
         await ctx.send(queue_string)
     else:

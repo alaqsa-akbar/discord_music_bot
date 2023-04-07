@@ -11,7 +11,7 @@ bot = commands.Bot(intents=intents, command_prefix='$')
 
 class MusicPlayer:
     def __init__(self):
-        self.playlist = asyncio.Queue()
+        self.playlist = []
 
     
     async def join(self, ctx) -> bool:
@@ -34,31 +34,35 @@ class MusicPlayer:
             await ctx.send('The bot is not in a voice channel')
 
     
-    async def add_song(self, song):
-        await self.playlist.put(song)
+    def add_song(self, song):
+        self.playlist.append(song)
 
 
     async def play_next(self, ctx):
-        if self.playlist.qsize:
-            self.play(ctx, await self.playlist.get())
+        self.playlist.pop(0)
+        if len(self.playlist) > 0:
+            self.play(ctx, self.playlist[0])
         else:
             asyncio.run_coroutine_threadsafe(ctx.send('Queue ended'), bot.loop)
 
     
     def play(self, ctx, song):
-        asyncio.run_coroutine_threadsafe(ctx.send(f'Playing **{song.title}**'), bot.loop)
         audio = song.getbestaudio()
         source = FFmpegPCMAudio(audio.url, **FFMPEG_OPTIONS)
         ctx.guild.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(ctx), bot.loop))
 
+    
+    def get_first(self):
+        return self.playlist[0]
+
 
     def get_size(self) -> int:
-        return self.playlist.qsize()
+        return len(self.playlist)
     
 
     def is_empty(self) -> bool:
-        return self.playlist.empty()
+        return len(self.playlist) == 0
 
 
     def clear(self):
-        self.playlist._queue.clear()
+        self.playlist.clear()
