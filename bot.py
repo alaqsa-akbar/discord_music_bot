@@ -29,7 +29,7 @@ async def join(ctx):
 @bot.command()
 async def leave(ctx):
     await mp.leave(ctx)
-    
+
 
 @bot.command()
 async def play(ctx, *, args):
@@ -83,12 +83,10 @@ async def stop(ctx):
     await ctx.guild.voice_client.disconnect()
 
 
-# TODO: Fix skip command. For some reason, play_next() is being called twice
 @bot.command()
 async def skip(ctx):
     if ctx.guild.voice_client.is_playing():
         ctx.guild.voice_client.stop()
-    await mp.play_next(ctx)
 
 
 @bot.command()
