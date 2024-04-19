@@ -1,0 +1,3 @@
+disnake==2.9.1
+pafy==0.5.5
+validators==0.28.0
